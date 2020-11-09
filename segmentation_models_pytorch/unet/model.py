@@ -42,17 +42,17 @@ class Unet(SegmentationModel):
     """
 
     def __init__(
-        self,
-        encoder_name: str = "resnet34",
-        encoder_depth: int = 5,
-        encoder_weights: str = "imagenet",
-        decoder_use_batchnorm: bool = True,
-        decoder_channels: List[int] = (256, 128, 64, 32, 16),
-        decoder_attention_type: Optional[str] = None,
-        in_channels: int = 3,
-        classes: int = 1,
-        activation: Optional[Union[str, callable]] = None,
-        aux_params: Optional[dict] = None,
+            self,
+            encoder_name: str = "resnet34",
+            encoder_depth: int = 5,
+            encoder_weights: str = "imagenet",
+            decoder_use_batchnorm: bool = True,
+            decoder_channels: List[int] = (256, 128, 64, 32, 16),
+            decoder_attention_type: Optional[str] = None,
+            in_channels: int = 3,
+            classes: int = 1,
+            activation: Optional[Union[str, callable]] = None,
+            aux_params: Optional[dict] = None,
     ):
         super().__init__()
 
@@ -88,3 +88,16 @@ class Unet(SegmentationModel):
 
         self.name = "u-{}".format(encoder_name)
         self.initialize()
+
+    def forward(self, x, sam=None):
+        """Sequentially pass `x` trough model`s encoder, decoder and heads"""
+        features = self.encoder(x)
+        decoder_output = self.decoder(*features, sam=sam)
+
+        masks = self.segmentation_head(decoder_output)
+
+        if self.classification_head is not None:
+            labels = self.classification_head(features[-1])
+            return masks, labels
+
+        return masks
