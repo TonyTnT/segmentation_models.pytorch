@@ -17,7 +17,9 @@ from albumentations import (
 )
 import argparse
 from utils import Seg_Trainer
+import warnings
 
+warnings.filterwarnings('ignore')
 
 # image transform
 def seg_transforms(phase, resize=(512, 512), mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
@@ -89,6 +91,7 @@ class Defect_Dataset(Dataset):
         # mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
         if self.seg_transforms is not None:
             aug = self.seg_transforms(image=image, mask=mask)
+            # print(aug["image"].shape, aug["mask"].shape)
             return aug["image"], aug["mask"]
         else:
             return image, mask
@@ -98,7 +101,7 @@ model = smp.Unet('resnet18', encoder_weights='imagenet')
 model = smp.Unet('resnet18', encoder_weights='imagenet')
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     ###################################################################################################################
     # 部分训练超参数设定
     parser = argparse.ArgumentParser()
