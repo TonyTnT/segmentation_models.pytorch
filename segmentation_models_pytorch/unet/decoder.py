@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import sys
 from ..base import modules as md
 
 
@@ -105,9 +105,8 @@ class UnetDecoder(nn.Module):
         ]
         self.blocks = nn.ModuleList(blocks)
 
-    def forward(self, *features):
-
-        features = features[1:]    # remove first skip with same spatial resolution
+    def forward(self, *features, sam):
+        features = features[1:]  # remove first skip with same spatial resolution
         features = features[::-1]  # reverse channels to start from head of encoder
 
         head = features[0]
@@ -117,5 +116,11 @@ class UnetDecoder(nn.Module):
         for i, decoder_block in enumerate(self.blocks):
             skip = skips[i] if i < len(skips) else None
             x = decoder_block(x, skip)
-
+            if sam is not None:
+                factor = x.shape[2] / sam.shape[2]
+                sam_t = F.interpolate(sam, scale_factor=factor)
+                x = x * sam_t
+            else:
+                # print('not sam')
+                pass
         return x
