@@ -21,6 +21,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
+
 # image transform
 def seg_transforms(phase, resize=(512, 512), mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
     """ Get segmentation albumentation tansforms
@@ -111,9 +112,13 @@ class Defect_Dataset(Dataset):
                 return image, mask
 
 
+###################################################################################################################
+# 这里的model 只是示例 train当中应用的model 在下面 main函数中
 model = smp.Unet('resnet18', encoder_weights='imagenet')
-model = smp.Unet('resnet18', encoder_weights='imagenet')
-
+# model = smp.Unet('resnet18', encoder_weights='imagenet', decoder_method_type="add2upsample")  # 缺省的method 是 add2upsample
+model = smp.Unet('resnet18', encoder_weights='imagenet', decoder_method_type="add2skip")
+# 但是 decoder_method_type 生效的前置是需要 在训练中传入 samn(spatio attention map) 如果没有sam 则decoder_method_type不生效 即为原版的unet
+###################################################################################################################
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     ###################################################################################################################
@@ -181,7 +186,8 @@ if __name__ == "__main__":
     ###################################################################################################################
     # 初始化 模型、loss函数
     # model = smp.Unet('se_resnext101_32x4d', encoder_weights='imagenet', classes=1, activation=None)
-    model = smp.Unet('resnet18', encoder_weights='imagenet', classes=1, activation=None)
+    model = smp.Unet('resnet18', encoder_weights='imagenet', classes=1, activation=None,
+                     decoder_method_type="add2upsample")
 
     criterion = nn.BCEWithLogitsLoss()
     ###################################################################################################################

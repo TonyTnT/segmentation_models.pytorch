@@ -71,9 +71,10 @@ class UnetDecoder(nn.Module):
             use_batchnorm=True,
             attention_type=None,
             center=False,
+            method=None,
     ):
         super().__init__()
-
+        self.method = method if method else "add2upsample"
         if n_blocks != len(decoder_channels):
             raise ValueError(
                 "Model depth is {}, but you provide `decoder_channels` for {} blocks.".format(
@@ -114,13 +115,28 @@ class UnetDecoder(nn.Module):
 
         x = self.center(head)
         for i, decoder_block in enumerate(self.blocks):
-            skip = skips[i] if i < len(skips) else None
-            x = decoder_block(x, skip)
             if sam is not None:
-                factor = x.shape[2] / sam.shape[2]
-                sam_t = F.interpolate(sam, scale_factor=factor)
-                x = x * sam_t
+                if self.method == "add2skip":
+                    # print('Method ADD2SKIP')
+                    skip = skips[i] if i < len(skips) else None
+                    if skip is not None:
+                        factor = skip.shape[2] / sam.shape[2]
+                        sam_t = F.interpolate(sam, scale_factor=factor)
+                        skip = skip * sam_t
+                    x = decoder_block(x, skip)
+                elif self.method == "add2upsample":
+                    # print('Method ADD2UPSAMPLE')
+                    skip = skips[i] if i < len(skips) else None
+                    x = decoder_block(x, skip)
+                    factor = x.shape[2] / sam.shape[2]
+                    sam_t = F.interpolate(sam, scale_factor=factor)
+                    x = x * sam_t
+                else:
+                    raise Exception(print('Method not define!!!!!!!!'))
             else:
+                # print('Method ORIGINAL')
+                skip = skips[i] if i < len(skips) else None
+                x = decoder_block(x, skip)
                 # print('not sam')
                 pass
         return x
