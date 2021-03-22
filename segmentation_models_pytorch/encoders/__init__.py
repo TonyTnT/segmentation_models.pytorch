@@ -12,7 +12,10 @@ from .efficientnet import efficient_net_encoders
 from .mobilenet import mobilenet_encoders
 from .xception import xception_encoders
 from .timm_efficientnet import timm_efficientnet_encoders
-
+from .timm_resnest import timm_resnest_encoders
+from .timm_res2net import timm_res2net_encoders
+from .timm_regnet import timm_regnet_encoders
+from .timm_sknet import timm_sknet_encoders
 from ._preprocessing import preprocess_input
 
 encoders = {}
@@ -27,16 +30,30 @@ encoders.update(efficient_net_encoders)
 encoders.update(mobilenet_encoders)
 encoders.update(xception_encoders)
 encoders.update(timm_efficientnet_encoders)
+encoders.update(timm_resnest_encoders)
+encoders.update(timm_res2net_encoders)
+encoders.update(timm_regnet_encoders)
+encoders.update(timm_sknet_encoders)
 
 
 def get_encoder(name, in_channels=3, depth=5, weights=None):
-    Encoder = encoders[name]["encoder"]
+
+    try:
+        Encoder = encoders[name]["encoder"]
+    except KeyError:
+        raise KeyError("Wrong encoder name `{}`, supported encoders: {}".format(name, list(encoders.keys())))
+
     params = encoders[name]["params"]
     params.update(depth=depth)
     encoder = Encoder(**params)
 
     if weights is not None:
-        settings = encoders[name]["pretrained_settings"][weights]
+        try:
+            settings = encoders[name]["pretrained_settings"][weights]
+        except KeyError:
+            raise KeyError("Wrong pretrained weights `{}` for encoder `{}`. Available options are: {}".format(
+                weights, name, list(encoders[name]["pretrained_settings"].keys()),
+            ))
         encoder.load_state_dict(model_zoo.load_url(settings["url"]))
 
     encoder.set_in_channels(in_channels)
@@ -52,7 +69,7 @@ def get_preprocessing_params(encoder_name, pretrained="imagenet"):
     settings = encoders[encoder_name]["pretrained_settings"]
 
     if pretrained not in settings.keys():
-        raise ValueError("Avaliable pretrained options {}".format(settings.keys()))
+        raise ValueError("Available pretrained options {}".format(settings.keys()))
 
     formatted_settings = {}
     formatted_settings["input_space"] = settings[pretrained].get("input_space")
